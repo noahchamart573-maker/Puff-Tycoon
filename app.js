@@ -1,16 +1,93 @@
-const PRODUCTS=[{id:'brise',name:'Brise Fruitée',desc:'Pastilles aromatiques pétillantes',cost:7,price:15,color:'#fa9a7e'},{id:'lune',name:'Lune Mentholée',desc:'Bonbons frais, goût intense',cost:10,price:21,color:'#6fc8c8'},{id:'soleil',name:'Soleil Tropical',desc:'Gommes aux fruits du soleil',cost:15,price:31,color:'#f4c466'}];
-const DEFAULT={cash:120,day:1,stock:{brise:8,lune:3,soleil:0},prices:{brise:15,lune:21,soleil:31},reputation:42,dealers:0,totalSales:0,daySales:0,logs:['Bienvenue dans ton atelier de nuages aromatiques !'],event:{title:'Première ouverture',text:'Les curieux découvrent tes produits.',multiplier:1},claimed:[]};
-let game=load();
-const $=s=>document.querySelector(s);const money=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
-function load(){try{return {...DEFAULT,...JSON.parse(localStorage.getItem('puff-tycoon-save')),stock:{...DEFAULT.stock,...JSON.parse(localStorage.getItem('puff-tycoon-save'))?.stock},prices:{...DEFAULT.prices,...JSON.parse(localStorage.getItem('puff-tycoon-save'))?.prices}}}catch{return structuredClone(DEFAULT)}}
-function save(){localStorage.setItem('puff-tycoon-save',JSON.stringify(game));$('#save-note').textContent='Sauvegardé à l’instant ✓'}
-function productDemand(p){const priceFactor=Math.max(.15,1-(game.prices[p.id]-p.price)/(p.price*.75));return Math.max(0,Math.round((3+game.reputation/22+game.dealers*1.7)*priceFactor*game.event.multiplier))}
-function renderProducts(){const list=$('#product-list'),template=$('#product-template');list.replaceChildren();PRODUCTS.forEach(p=>{const n=template.content.cloneNode(true);const card=n.querySelector('.product-card');card.style.setProperty('--product-color',p.color);n.querySelector('h3').textContent=p.name;n.querySelector('.stock-badge').textContent=`${game.stock[p.id]} en stock`;n.querySelector('.product-description').textContent=p.desc;n.querySelector('.price-value').textContent=money(game.prices[p.id]);n.querySelector('.unit-cost').textContent=`coût ${money(p.cost)}`;n.querySelector('.price-down').onclick=()=>changePrice(p,-1);n.querySelector('.price-up').onclick=()=>changePrice(p,1);const b=n.querySelector('.restock-button');b.textContent=`+5 · ${money(p.cost*5)}`;b.disabled=game.cash<p.cost*5;b.onclick=()=>restock(p);list.append(n)})}
-function goals(){return[{id:'sales',label:'Vendre 25 produits',value:game.totalSales,target:25,reward:75},{id:'rep',label:'Atteindre 65 % de réputation',value:game.reputation,target:65,reward:100},{id:'network',label:'Signer 3 revendeurs',value:game.dealers,target:3,reward:150}]}
-function render(){const demand=PRODUCTS.reduce((a,p)=>a+productDemand(p),0);$('#cash').textContent=money(game.cash);$('#day-label').textContent=`Jour ${game.day} · Matin`;$('#stock-stat').textContent=Object.values(game.stock).reduce((a,b)=>a+b,0);$('#reputation-stat').textContent=`${game.reputation}%`;$('#dealer-stat').textContent=game.dealers;$('#daily-demand').textContent=`${demand} demandes`;$('#daily-progress').textContent=`${game.daySales} / ${demand}`;$('#daily-progress-bar').style.width=`${Math.min(100,demand?game.daySales/demand*100:0)}%`;$('#event-title').textContent=game.event.title;$('#event-text').textContent=game.event.text;$('#network-sales').textContent=`+${game.dealers*2}`;const recruitCost=65+game.dealers*45;$('#network-cost').textContent=money(recruitCost);$('#recruit-button').textContent=`Recruter un revendeur · ${money(recruitCost)}`;$('#recruit-button').disabled=game.cash<recruitCost||game.dealers>=8;$('#level-label').textContent=`Niveau ${1+Math.floor(game.totalSales/30)}`;renderProducts();renderGoals();$('#log-list').replaceChildren(...game.logs.slice(0,4).map(t=>{const li=document.createElement('li');li.textContent=t;return li}));save()}
-function renderGoals(){const box=$('#goal-list');box.replaceChildren();goals().forEach(g=>{const done=game.claimed.includes(g.id),complete=g.value>=g.target;const el=document.createElement('div');el.className=`goal ${done?'done':''}`;el.innerHTML=`<div><strong>${done?'✓ ':''}${g.label}</strong><br><span>${Math.min(g.value,g.target)} / ${g.target}${done?' · récompense reçue':complete?` · +${money(g.reward)}`:''}</span></div><button class="restock-button" ${complete&&!done?'':'disabled'}>${complete&&!done?'Réclamer':'En cours'}</button><div class="progress"><i style="width:${Math.min(100,g.value/g.target*100)}%"></i></div>`;el.querySelector('button').onclick=()=>{game.cash+=g.reward;game.claimed.push(g.id);note(`Objectif accompli : +${money(g.reward)} !`);render()};box.append(el)})}
-function changePrice(p,amount){game.prices[p.id]=Math.max(p.cost+2,game.prices[p.id]+amount);render()}
-function restock(p){const total=p.cost*5;if(game.cash<total)return;game.cash-=total;game.stock[p.id]+=5;note(`Production : 5 ${p.name} ajoutés au stock.`);render()}
-function note(text){game.logs.unshift(`Jour ${game.day} · ${text}`);game.logs=game.logs.slice(0,10)}
-function nextDay(){let sold=0,revenue=0;PRODUCTS.forEach(p=>{const qty=Math.min(game.stock[p.id],productDemand(p));game.stock[p.id]-=qty;sold+=qty;revenue+=qty*game.prices[p.id]});const dealerSales=Math.min(game.dealers*2,Math.floor(Object.values(game.stock).reduce((a,b)=>a+b,0)/2));if(dealerSales){game.stock.brise=Math.max(0,game.stock.brise-dealerSales);sold+=dealerSales;revenue+=dealerSales*game.prices.brise}game.cash+=revenue;game.totalSales+=sold;game.daySales=sold;game.reputation=Math.max(15,Math.min(100,game.reputation+(sold?2:-3)+(game.dealers?1:0)));game.day++;const events=[{title:'Marché animé',text:'Une foule passe devant l’atelier.',multiplier:1.25},{title:'Journée calme',text:'Tes habitués restent au rendez-vous.',multiplier:.8},{title:'Tendance fruitée',text:'Les saveurs colorées attirent les regards.',multiplier:1.15},{title:'Bouche-à-oreille',text:'Ta réputation fait son chemin.',multiplier:1.35}];game.event=events[Math.floor(Math.random()*events.length)];note(sold?`${sold} produits vendus pour ${money(revenue)}.`:'Aucune vente : pense à produire ou ajuster les prix.');render()}
-$('#next-day-button').onclick=nextDay;$('#recruit-button').onclick=()=>{const cost=65+game.dealers*45;if(game.cash>=cost){game.cash-=cost;game.dealers++;game.reputation=Math.min(100,game.reputation+3);note('Un nouveau revendeur rejoint ton réseau !');render()}};$('#reset-button').onclick=()=>{if(confirm('Recommencer avec une nouvelle boutique ?')){game=structuredClone(DEFAULT);render()}};render();
+const Game = window.PuffTycoonGame;
+const $ = selector => document.querySelector(selector);
+const money = value => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
+
+function loadGame() {
+  try {
+    return Game.createGame(JSON.parse(localStorage.getItem('puff-tycoon-save')));
+  } catch {
+    return Game.createGame();
+  }
+}
+
+let game = loadGame();
+
+function save() {
+  localStorage.setItem('puff-tycoon-save', JSON.stringify(game));
+  $('#save-note').textContent = 'Sauvegardé à l’instant ✓';
+}
+
+function renderProducts() {
+  const list = $('#product-list');
+  const template = $('#product-template');
+  list.replaceChildren();
+  Game.PRODUCTS.forEach(product => {
+    const content = template.content.cloneNode(true);
+    const card = content.querySelector('.product-card');
+    card.style.setProperty('--product-color', product.color);
+    content.querySelector('h3').textContent = product.name;
+    content.querySelector('.stock-badge').textContent = `${game.stock[product.id]} en stock`;
+    content.querySelector('.product-description').textContent = product.desc;
+    content.querySelector('.price-value').textContent = money(game.prices[product.id]);
+    content.querySelector('.unit-cost').textContent = `coût ${money(product.cost)}`;
+    content.querySelector('.price-down').onclick = () => { Game.changePrice(game, product.id, -1); render(); };
+    content.querySelector('.price-up').onclick = () => { Game.changePrice(game, product.id, 1); render(); };
+    const restockButton = content.querySelector('.restock-button');
+    restockButton.textContent = `+5 · ${money(product.cost * 5)}`;
+    restockButton.disabled = game.cash < product.cost * 5;
+    restockButton.onclick = () => { if (Game.restock(game, product.id)) render(); };
+    list.append(content);
+  });
+}
+
+function renderGoals() {
+  const box = $('#goal-list');
+  box.replaceChildren();
+  Game.goals(game).forEach(goal => {
+    const done = game.claimed.includes(goal.id);
+    const complete = goal.value >= goal.target;
+    const item = document.createElement('div');
+    item.className = `goal ${done ? 'done' : ''}`;
+    item.innerHTML = `<div><strong>${done ? '✓ ' : ''}${goal.label}</strong><br><span>${Math.min(goal.value, goal.target)} / ${goal.target}${done ? ' · récompense reçue' : complete ? ` · +${money(goal.reward)}` : ''}</span></div><button class="restock-button" ${complete && !done ? '' : 'disabled'}>${complete && !done ? 'Réclamer' : 'En cours'}</button><div class="progress"><i style="width:${Math.min(100, goal.value / goal.target * 100)}%"></i></div>`;
+    item.querySelector('button').onclick = () => { if (Game.claimGoal(game, goal.id)) render(); };
+    box.append(item);
+  });
+}
+
+function render() {
+  $('#cash').textContent = money(game.cash);
+  $('#day-label').textContent = `Jour ${game.day} · Matin`;
+  $('#stock-stat').textContent = Object.values(game.stock).reduce((sum, amount) => sum + amount, 0);
+  $('#reputation-stat').textContent = `${game.reputation}%`;
+  $('#dealer-stat').textContent = game.dealers;
+  $('#daily-demand').textContent = `${game.dailyDemand} demandes`;
+  $('#daily-progress').textContent = `${game.daySales} / ${game.dailyDemand}`;
+  $('#daily-progress-bar').style.width = `${Math.min(100, game.dailyDemand ? game.daySales / game.dailyDemand * 100 : 0)}%`;
+  $('#event-title').textContent = game.event.title;
+  $('#event-text').textContent = game.event.text;
+  $('#network-sales').textContent = `+${game.dealers * 2}`;
+  const recruitCost = 65 + game.dealers * 45;
+  $('#network-cost').textContent = money(recruitCost);
+  const recruitButton = $('#recruit-button');
+  recruitButton.textContent = `Recruter un revendeur · ${money(recruitCost)}`;
+  recruitButton.disabled = game.cash < recruitCost || game.dealers >= 8;
+  $('#level-label').textContent = `Niveau ${1 + Math.floor(game.totalSales / 30)}`;
+  renderProducts();
+  renderGoals();
+  $('#log-list').replaceChildren(...game.logs.slice(0, 4).map(text => {
+    const item = document.createElement('li');
+    item.textContent = text;
+    return item;
+  }));
+  save();
+}
+
+$('#next-day-button').onclick = () => { Game.advanceDay(game); render(); };
+$('#recruit-button').onclick = () => { if (Game.recruitDealer(game)) render(); };
+$('#reset-button').onclick = () => {
+  if (confirm('Recommencer avec une nouvelle boutique ?')) {
+    game = Game.createGame();
+    render();
+  }
+};
+render();

@@ -17,3 +17,12 @@ Puis visitez `http://localhost:8000`.
 Dans **Settings → Pages**, choisissez la branche de publication et le dossier racine (`/`). Aucun outil de compilation n'est nécessaire : le jeu est une application statique.
 
 La progression est automatiquement enregistrée dans le `localStorage` du navigateur.
+
+## Vérifier la logique de jeu
+
+```bash
+node test-game.js
+```
+
+Ce test vérifie notamment la production, les limites de prix, les ventes sans stock,
+les ventes par les revendeurs et les récompenses d'objectifs.
