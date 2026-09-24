@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#111827" />
+    <title>Puff Tycoon — Gestion de nuages</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div><p class="eyebrow">SIMULATION SANS NICOTINE</p><h1>Puff Tycoon</h1></div>
+        <button class="icon-button" id="reset-button" aria-label="Recommencer la partie">↻</button>
+      </header>
+
+      <section class="cash-card"><span>Trésorerie</span><strong id="cash">0 €</strong><small id="day-label">Jour 1 · Matin</small></section>
+
+      <section class="stats" aria-label="Indicateurs"><article><span>Stock</span><strong id="stock-stat">0</strong></article><article><span>Réputation</span><strong id="reputation-stat">0%</strong></article><article><span>Revendeurs</span><strong id="dealer-stat">0</strong></article></section>
+
+      <section class="panel" id="dashboard-panel">
+        <div class="section-heading"><div><p class="eyebrow">AUJOURD'HUI</p><h2>Ton atelier tourne</h2></div><span class="day-pill" id="daily-demand">0 demandes</span></div>
+        <div class="progress-row"><span>Objectif du jour</span><strong id="daily-progress">0 / 0</strong></div><div class="progress"><i id="daily-progress-bar"></i></div>
+        <div class="event-card" id="event-card"><span class="event-icon">✦</span><div><strong id="event-title">Démarre ton aventure</strong><p id="event-text">Ajuste ton prix puis passe au jour suivant.</p></div></div>
+        <button class="primary-button" id="next-day-button">Terminer la journée <span>→</span></button>
+      </section>
+
+      <section class="panel" id="products-panel">
+        <div class="section-heading"><div><p class="eyebrow">CATALOGUE</p><h2>Produits aromatiques</h2></div><span class="subtle">Sans nicotine</span></div>
+        <div id="product-list" class="product-list"></div>
+      </section>
+
+      <section class="panel" id="network-panel">
+        <div class="section-heading"><div><p class="eyebrow">RÉSEAU</p><h2>Revendeurs partenaires</h2></div></div>
+        <div class="network-summary"><div><strong id="network-sales">0</strong><span>ventes/jour</span></div><div><strong id="network-cost">0 €</strong><span>prochain contrat</span></div></div>
+        <button class="secondary-button" id="recruit-button">Recruter un revendeur</button>
+      </section>
+
+      <section class="panel" id="goals-panel">
+        <div class="section-heading"><div><p class="eyebrow">ASCENSION</p><h2>Objectifs</h2></div><span id="level-label" class="level-badge">Niveau 1</span></div>
+        <div id="goal-list" class="goal-list"></div>
+      </section>
+
+      <section class="panel journal"><div class="section-heading"><div><p class="eyebrow">JOURNAL</p><h2>Dernières nouvelles</h2></div></div><ul id="log-list"></ul></section>
+      <p class="save-note" id="save-note">Sauvegarde locale active</p>
+    </main>
+    <template id="product-template"><article class="product-card"><div class="product-symbol"></div><div class="product-main"><div class="product-name-row"><h3></h3><span class="stock-badge"></span></div><p class="product-description"></p><div class="price-controls"><button class="price-down" aria-label="Baisser le prix">−</button><strong class="price-value"></strong><button class="price-up" aria-label="Augmenter le prix">+</button><span class="unit-cost"></span></div></div><button class="restock-button">Produire</button></article></template>
+    <script src="app.js"></script>
+  </body>
+</html>
